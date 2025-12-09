@@ -48,7 +48,7 @@ const EditableText: React.FC<EditableTextProps> = ({
         suppressContentEditableWarning
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className={`${className} outline-none ring-2 ring-blue-400 ring-offset-2 rounded cursor-text bg-white/10 min-w-[20px] inline-block`}
+        className={`${className} outline-none ring-2 ring-green-400 ring-offset-2 ring-offset-black rounded cursor-text bg-white/10 min-w-[20px] inline-block px-1`}
       >
         {text}
       </Tag>

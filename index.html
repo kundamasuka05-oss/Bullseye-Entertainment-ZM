@@ -4,44 +4,90 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Bullseye Entertainment ZM</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['"Exo 2"', 'sans-serif'],
+              display: ['"Orbitron"', 'sans-serif'],
+            },
             colors: {
               bullseye: {
-                red: '#DC2626', // Red-600
-                black: '#111827', // Gray-900
-                dark: '#0f0f0f',
-                light: '#f3f4f6',
+                base: '#02030A', // Deep Navy Void
+                surface: '#0d121f', // Slightly lighter for cards
+                red: '#FF003C', // Neon Red
+                blue: '#00AFFF', // Neon Blue
+                purple: '#9A00FF', // Soft Purple Accent
               }
+            },
+            boxShadow: {
+              'neon-red': '0 0 10px rgba(255, 0, 60, 0.5), 0 0 20px rgba(255, 0, 60, 0.3)',
+              'neon-blue': '0 0 10px rgba(0, 175, 255, 0.5), 0 0 20px rgba(0, 175, 255, 0.3)',
+              'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+            },
+            backgroundImage: {
+              'cyber-grid': 'linear-gradient(rgba(0, 175, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 175, 255, 0.05) 1px, transparent 1px)',
             }
           }
         }
       }
     </script>
     <style>
-      /* Custom scrollbar for better aesthetics */
+      body {
+        background-color: #02030A;
+        color: #e5e7eb;
+      }
+      /* Custom scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #f1f1f1; 
+        background: #02030A; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #888; 
+        background: #333; 
         border-radius: 4px;
+        border: 1px solid #444;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
+        background: #FF003C; 
       }
       .animate-fade-in {
-        animation: fadeIn 0.5s ease-out forwards;
+        animation: fadeIn 0.6s ease-out forwards;
+      }
+      .animate-float {
+        animation: float 6s ease-in-out infinite;
+      }
+      .animate-pulse-slow {
+        animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       }
       @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
+        from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
+      }
+      
+      /* Utilities */
+      .glass-panel {
+        background: rgba(13, 18, 31, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .text-glow {
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
       }
     </style>
   <script type="importmap">
@@ -63,7 +109,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-50 text-gray-900 font-sans antialiased">
+  <body class="antialiased selection:bg-bullseye-red selection:text-white">
     <div id="root"></div>
   </body>
 </html>

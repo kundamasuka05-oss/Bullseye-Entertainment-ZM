@@ -28,7 +28,11 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-export const StoreProvider = ({ children }: { children: ReactNode }) => {
+interface StoreProviderProps {
+  children: ReactNode;
+}
+
+export const StoreProvider: React.FC<StoreProviderProps> = ({ children }) => {
   // --- STATE ---
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     return localStorage.getItem('bullseye_auth') === 'true';
