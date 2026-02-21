@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product } from '../types';
+import { COMPANY_INFO } from '../constants';
 
 interface BookingFormProps {
   preselectedItems?: Product[];
@@ -51,10 +52,10 @@ const BookingForm: React.FC<BookingFormProps> = ({ preselectedItems = [] }) => {
     const encodedMessage = encodeURIComponent(message);
     
     // Open WhatsApp in a new tab to avoid iframe/X-Frame-Options blocking
-    // Updated to new number: 260963213509
-    const url = `https://wa.me/260963213509?text=${encodedMessage}`;
+    const url = `https://wa.me/${COMPANY_INFO.whatsappMain}?text=${encodedMessage}`;
     window.open(url, '_blank');
   };
+
 
   const inputClasses = "mt-1 block w-full bg-black/50 border border-white/10 rounded-lg shadow-sm focus:border-bullseye-red focus:ring-1 focus:ring-bullseye-red text-white placeholder-gray-600 px-4 py-3 transition-colors";
   const labelClasses = "block text-xs font-bold text-bullseye-blue uppercase tracking-wider mb-1";

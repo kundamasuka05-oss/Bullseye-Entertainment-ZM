@@ -2,12 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import ProductCard from '../components/ProductCard';
 import { Product, SortOption } from '../types';
-import { Search, X, ShoppingCart, Filter } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, X, MessageCircle, Filter } from 'lucide-react';
+import { COMPANY_INFO } from '../constants';
 
 const Shop: React.FC = () => {
   const { products } = useStore();
-  const navigate = useNavigate();
   
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -33,8 +32,11 @@ const Shop: React.FC = () => {
     setSelectedProduct(product);
   };
 
-  const handleBookItem = (product: Product) => {
-    navigate('/contact');
+  const handleWhatsAppBook = (product: Product) => {
+    const message = `Hello, I want to book ${product.name} for ZMW ${product.price}`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${COMPANY_INFO.whatsappMain}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   return (
@@ -152,11 +154,14 @@ const Shop: React.FC = () => {
               </div>
 
               <button 
-                onClick={() => handleBookItem(selectedProduct)}
-                className="w-full bg-bullseye-red text-white py-4 rounded font-bold uppercase tracking-widest hover:bg-red-600 transition-all shadow-neon-red flex items-center justify-center space-x-3"
+                onClick={() => handleWhatsAppBook(selectedProduct)}
+                disabled={!selectedProduct.available}
+                className={`w-full py-4 rounded font-bold uppercase tracking-widest hover:bg-green-500 transition-all shadow-lg flex items-center justify-center space-x-3 ${
+                  selectedProduct.available ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                }`}
               >
-                <ShoppingCart size={20} />
-                <span>Add to Request</span>
+                <MessageCircle size={20} />
+                <span>Book via WhatsApp</span>
               </button>
             </div>
           </div>
@@ -165,5 +170,6 @@ const Shop: React.FC = () => {
     </div>
   );
 };
+
 
 export default Shop;

@@ -162,7 +162,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                <Link to="/shop" className="text-sm text-gray-400 hover:text-bullseye-blue transition-colors">Browse Gear</Link>
                <Link to="/about" className="text-sm text-gray-400 hover:text-bullseye-blue transition-colors">Our Mission</Link>
                <Link to="/contact" className="text-sm text-gray-400 hover:text-bullseye-blue transition-colors">Book Event</Link>
-               <Link to="/admin" className="text-xs text-gray-600 hover:text-gray-400 mt-4">Admin Access</Link>
+               <Link to="/admin-login" className="text-xs text-gray-600 hover:text-gray-400 mt-4">Admin Access</Link>
             </div>
           </div>
         </div>

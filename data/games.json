@@ -1,0 +1,7 @@
+[
+  { "id": "1", "name": "Giant Jenga", "price": 250, "category": "Games", "available": true, "description": "Classic block stacking game, but giant!", "image": "https://picsum.photos/400/300?random=1" },
+  { "id": "2", "name": "Giant Connect 4", "price": 300, "category": "Games", "available": true, "description": "Strategy game for two players or teams.", "image": "https://picsum.photos/400/300?random=2" },
+  { "id": "3", "name": "Cornhole Set", "price": 200, "category": "Games", "available": true, "description": "Toss the bean bags into the hole.", "image": "https://picsum.photos/400/300?random=3" },
+  { "id": "20", "name": "Fog Machine", "price": 250, "category": "Equipment", "available": true, "description": "Add atmosphere to the dance floor.", "image": "https://picsum.photos/400/300?random=20" },
+  { "id": "24", "name": "Egg & Spoon Race Kit", "price": 50, "category": "Team Building", "available": true, "description": "Classic balance game.", "image": "https://picsum.photos/400/300?random=24" }
+]
