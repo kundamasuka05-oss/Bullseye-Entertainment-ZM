@@ -27,8 +27,15 @@ export const uploadImage = async (
   if (onProgress) onProgress(80);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Upload failed');
+    let errorMessage = 'Upload failed';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorData.message || errorMessage;
+      if (errorData.details) console.error("UPLOAD: Server details:", errorData.details);
+    } catch (e) {
+      errorMessage = `Server Error: ${response.status}`;
+    }
+    throw new Error(errorMessage);
   }
 
   const data = await response.json();

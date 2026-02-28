@@ -2,14 +2,15 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product } from '../types';
-import { Trash2, Edit, Plus, Check, X, LogOut, ShieldAlert, Wand2, Terminal, Loader2 } from 'lucide-react';
+import { Trash2, Edit, Plus, Check, X, LogOut, ShieldAlert, Wand2, Terminal, Loader2, Lock, Unlock } from 'lucide-react';
 import { generateProductDescription } from '../services/geminiService';
 import ImageUpload from '../components/ImageUpload';
 
 const Admin: React.FC = () => {
   const { 
     isAdmin, login, logout, 
-    products, addProduct, updateProduct, deleteProduct, toggleProductAvailability
+    products, addProduct, updateProduct, deleteProduct, toggleProductAvailability, toggleProductLock,
+    siteContent, updateContent, gallery, updateGallery
   } = useStore();
 
   const [username, setUsername] = useState('');
@@ -114,6 +115,7 @@ const Admin: React.FC = () => {
                 <th className="px-6 py-4 text-left text-xs font-bold text-bullseye-blue uppercase tracking-widest">Asset</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-bullseye-blue uppercase tracking-widest">Price</th>
                 <th className="px-6 py-4 text-center text-xs font-bold text-bullseye-blue uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-bullseye-blue uppercase tracking-widest">Lock</th>
                 <th className="px-6 py-4 text-right text-xs font-bold text-bullseye-blue uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
@@ -136,14 +138,110 @@ const Admin: React.FC = () => {
                       {product.available ? <Check size={18} className="text-green-500 mx-auto" /> : <X size={18} className="text-red-500 mx-auto" />}
                     </button>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <button onClick={() => toggleProductLock(product.id)} className={`${product.locked ? 'text-bullseye-red' : 'text-gray-500'} hover:text-white transition-colors`}>
+                      {product.locked ? <Lock size={18} className="mx-auto" /> : <Unlock size={18} className="mx-auto" />}
+                    </button>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <button onClick={() => { setEditingProduct(product); setIsModalOpen(true); }} className="text-bullseye-blue hover:text-white mr-4"><Edit size={16} /></button>
-                    <button onClick={() => deleteProduct(product.id)} className="text-red-500 hover:text-white"><Trash2 size={16} /></button>
+                    <button 
+                      onClick={() => !product.locked && deleteProduct(product.id)} 
+                      disabled={product.locked}
+                      className={`${product.locked ? 'text-gray-700 cursor-not-allowed' : 'text-red-500 hover:text-white'}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Site Content Section */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-display font-bold text-white uppercase tracking-widest mb-6">Site Content</h2>
+          <div className="glass-panel p-8 rounded-2xl border border-white/10">
+            <h3 className="text-lg font-bold text-bullseye-blue uppercase tracking-widest mb-6 border-b border-white/5 pb-2">Origin Story Images</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((num) => (
+                <div key={num} className="space-y-4">
+                  <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-black/40">
+                    <img 
+                      src={siteContent[`aboutImage${num}`]} 
+                      alt={`About ${num}`} 
+                      className="w-full h-full object-cover opacity-60"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Image {num}</span>
+                    </div>
+                  </div>
+                  <ImageUpload 
+                    onUploadComplete={(url) => updateContent(`aboutImage${num}`, url)}
+                    label={`Update Image ${num}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Explore Moments Gallery Section */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-display font-bold text-white uppercase tracking-widest mb-6">Explore Moments Gallery</h2>
+          <div className="glass-panel p-8 rounded-2xl border border-white/10">
+            <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-2">
+              <h3 className="text-lg font-bold text-bullseye-blue uppercase tracking-widest">Gallery Items</h3>
+              <button 
+                onClick={() => {
+                  const newItems = [...gallery, { id: Date.now().toString(), url: 'https://picsum.photos/800/600?random=' + Date.now() }];
+                  updateGallery(newItems);
+                }}
+                className="bg-bullseye-purple/20 text-bullseye-purple px-3 py-1 rounded text-[10px] font-bold uppercase flex items-center hover:bg-bullseye-purple/30 transition-colors"
+              >
+                <Plus size={12} className="mr-2" /> Add Placeholder
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {gallery.map((item, index) => (
+                <div key={item.id} className="space-y-4 p-4 bg-black/20 rounded-xl border border-white/5 group relative">
+                  <button 
+                    onClick={() => {
+                      const newItems = gallery.filter(g => g.id !== item.id);
+                      updateGallery(newItems);
+                    }}
+                    className="absolute top-2 right-2 z-10 bg-red-500/80 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  
+                  <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-black/40">
+                    <img 
+                      src={item.url} 
+                      alt={`Gallery ${index + 1}`} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  
+                  <ImageUpload 
+                    onUploadComplete={(url) => {
+                      const newItems = gallery.map(g => g.id === item.id ? { ...g, url } : g);
+                      updateGallery(newItems);
+                    }}
+                    label={`Update Image ${index + 1}`}
+                  />
+                </div>
+              ))}
+            </div>
+            
+            {gallery.length === 0 && (
+              <div className="text-center py-12 text-gray-500 font-mono text-xs uppercase tracking-widest">
+                No gallery items found. Add one to get started.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -160,7 +258,20 @@ const Admin: React.FC = () => {
                 </select>
                 <input type="number" placeholder="Price ZMW" className="w-1/2 bg-black/60 border border-white/10 p-3 rounded-lg text-white" value={editingProduct.price || ''} onChange={e => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })} />
               </div>
-              <ImageUpload onUploadComplete={url => setEditingProduct({ ...editingProduct, image: url })} label="Game Image" />
+              <div className="flex items-center justify-between bg-black/40 border border-white/10 p-3 rounded-lg">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lock Asset Image</span>
+                <button 
+                  onClick={() => setEditingProduct({ ...editingProduct, locked: !editingProduct.locked })}
+                  className={`p-2 rounded-lg transition-all ${editingProduct.locked ? 'bg-bullseye-red text-white' : 'bg-white/5 text-gray-500'}`}
+                >
+                  {editingProduct.locked ? <Lock size={16} /> : <Unlock size={16} />}
+                </button>
+              </div>
+              <ImageUpload 
+                onUploadComplete={url => setEditingProduct({ ...editingProduct, image: url })} 
+                label="Game Image" 
+                disabled={editingProduct.locked}
+              />
               <div className="relative">
                 <textarea placeholder="Description" className="w-full bg-black/60 border border-white/10 p-3 rounded-lg h-24 text-white text-sm" value={editingProduct.description || ''} onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })}></textarea>
                 <button onClick={async () => {

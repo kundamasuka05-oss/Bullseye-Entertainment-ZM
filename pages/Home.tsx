@@ -4,6 +4,7 @@ import { ArrowRight, Zap, Shield, Users } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import ProductCard from '../components/ProductCard';
 import EditableText from '../components/EditableText';
+import GalleryShowcase from '../components/GalleryShowcase';
 import { INITIAL_CONTENT } from '../constants';
 
 const Home: React.FC = () => {
@@ -146,6 +147,9 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* --- GALLERY SHOWCASE --- */}
+      <GalleryShowcase />
 
       {/* --- CTA SECTION --- */}
       <section className="py-24 relative overflow-hidden">

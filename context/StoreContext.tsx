@@ -22,8 +22,10 @@ interface StoreContextType {
   updateProduct: (product: Product) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   toggleProductAvailability: (id: string) => Promise<void>;
+  toggleProductLock: (id: string) => Promise<void>;
   
   updateContent: (key: string, value: string) => void;
+  updateGallery: (items: GalleryItem[]) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -42,14 +44,30 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const headers: any = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const [pRes, authRes] = await Promise.all([
+      const [pRes, authRes, cRes, gRes] = await Promise.all([
         fetch('/api/games', { headers }),
-        fetch('/api/auth/check', { headers })
+        fetch('/api/auth/check', { headers }),
+        fetch('/api/content'),
+        fetch('/api/gallery')
       ]);
 
       if (pRes.ok) {
         const data = await pRes.json();
         setProducts(data);
+      }
+
+      if (cRes.ok) {
+        const data = await cRes.json();
+        if (Object.keys(data).length > 0) {
+          setSiteContent(prev => ({ ...prev, ...data }));
+        }
+      }
+
+      if (gRes.ok) {
+        const data = await gRes.json();
+        if (data && data.length > 0) {
+          setGallery(data);
+        }
       }
 
       if (authRes.ok) {
@@ -168,16 +186,60 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const updateContent = (key: string, value: string) => {
-    setSiteContent(prev => ({ ...prev, [key]: value }));
+  const toggleProductLock = async (id: string) => {
+    const product = products.find(p => p.id === id);
+    if (product) {
+      const updated = { ...product, locked: !product.locked };
+      await updateProduct(updated);
+    }
+  };
+
+  const updateContent = async (key: string, value: string) => {
+    const newContent = { ...siteContent, [key]: value };
+    setSiteContent(newContent);
+
+    if (isAdmin) {
+      try {
+        const token = localStorage.getItem('admin_token');
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        await fetch('/api/content', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(newContent)
+        });
+      } catch (e) {
+        console.error("Failed to save content to server:", e);
+      }
+    }
+  };
+
+  const updateGallery = async (items: GalleryItem[]) => {
+    setGallery(items);
+    if (isAdmin) {
+      try {
+        const token = localStorage.getItem('admin_token');
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        await fetch('/api/gallery', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(items)
+        });
+      } catch (e) {
+        console.error("Failed to save gallery to server:", e);
+      }
+    }
   };
 
   return (
     <StoreContext.Provider value={{
       products, isAdmin, siteContent, gallery, loading,
       login, logout,
-      addProduct, updateProduct, deleteProduct, toggleProductAvailability,
-      updateContent
+      addProduct, updateProduct, deleteProduct, toggleProductAvailability, toggleProductLock,
+      updateContent, updateGallery
     }}>
       {loading ? (
         <div className="min-h-screen bg-bullseye-base flex items-center justify-center">

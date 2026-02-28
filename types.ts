@@ -6,6 +6,7 @@ export interface Product {
   description: string;
   image: string;
   available: boolean;
+  locked?: boolean;
 }
 
 export interface Booking {
@@ -39,6 +40,10 @@ export interface SiteContent {
   aboutMission: string;
   aboutVibe: string;
   aboutPromise: string;
+  aboutImage1: string;
+  aboutImage2: string;
+  aboutImage3: string;
+  aboutImage4: string;
   [key: string]: string; // Allow dynamic indexing
 }
 

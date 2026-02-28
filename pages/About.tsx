@@ -6,7 +6,14 @@ import { useStore } from '../context/StoreContext';
 import { INITIAL_CONTENT } from '../constants';
 
 const About: React.FC = () => {
-  const { gallery } = useStore();
+  const { siteContent } = useStore();
+
+  const aboutImages = [
+    siteContent.aboutImage1 || INITIAL_CONTENT.aboutImage1,
+    siteContent.aboutImage2 || INITIAL_CONTENT.aboutImage2,
+    siteContent.aboutImage3 || INITIAL_CONTENT.aboutImage3,
+    siteContent.aboutImage4 || INITIAL_CONTENT.aboutImage4,
+  ];
 
   return (
     <div className="animate-fade-in text-gray-300">
@@ -27,9 +34,9 @@ const About: React.FC = () => {
         {/* Story Section */}
         <div className="flex flex-col md:flex-row gap-12 items-center">
           <div className="md:w-1/2 grid grid-cols-2 gap-4">
-             {gallery.slice(0, 4).map((item, i) => (
-               <div key={item.id} className={`rounded-xl overflow-hidden border border-white/10 shadow-lg ${i % 2 === 0 ? 'translate-y-4' : '-translate-y-4'}`}>
-                 <img src={item.url} alt="Gallery" className="object-cover h-40 w-full opacity-80 hover:opacity-100 transition-opacity" />
+             {aboutImages.map((url, i) => (
+               <div key={i} className={`rounded-xl overflow-hidden border border-white/10 shadow-lg ${i % 2 === 0 ? 'translate-y-4' : '-translate-y-4'}`}>
+                 <img src={url} alt={`Origin Story ${i + 1}`} className="object-cover h-40 w-full opacity-80 hover:opacity-100 transition-opacity" />
                </div>
              ))}
           </div>

@@ -17,14 +17,20 @@ export const INITIAL_CONTENT: SiteContent = {
   aboutStory: "Started in the heart of Lusaka, Bullseye Entertainment began with a simple idea: bringing people together through play. We realized that whether it's a kid's birthday or a corporate retreat, the key to a great event is engagement.",
   aboutMission: "To provide high-quality, safe, and fun entertainment solutions that create lasting memories.",
   aboutVibe: "Energetic, professional, and reliable. We take the stress out of party planning.",
-  aboutPromise: "Clean equipment, on-time delivery, and transparent pricing. No hidden fees."
+  aboutPromise: "Clean equipment, on-time delivery, and transparent pricing. No hidden fees.",
+  aboutImage1: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2070',
+  aboutImage2: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069',
+  aboutImage3: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=2070',
+  aboutImage4: 'https://images.unsplash.com/photo-1530103862676-de3c9da59af7?q=80&w=2069'
 };
 
 export const INITIAL_GALLERY: GalleryItem[] = [
   { id: '1', url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2070' },
   { id: '2', url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069' },
   { id: '3', url: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=2070' },
-  { id: '4', url: 'https://images.unsplash.com/photo-1530103862676-de3c9da59af7?q=80&w=2069' }
+  { id: '4', url: 'https://images.unsplash.com/photo-1530103862676-de3c9da59af7?q=80&w=2069' },
+  { id: '5', url: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=2070' },
+  { id: '6', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070' }
 ];
 
 export const INITIAL_PRODUCTS: Product[] = [

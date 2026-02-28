@@ -9,6 +9,7 @@ interface ImageUploadProps {
   maxSizeMB?: number;
   className?: string;
   label?: string;
+  disabled?: boolean;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -16,7 +17,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   folderPath = 'public',
   maxSizeMB = 5,
   className = '',
-  label = "Upload Image"
+  label = "Upload Image",
+  disabled = false
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -38,7 +40,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const handleUpload = async (file: File) => {
-    if (!validateFile(file)) return;
+    if (disabled || !validateFile(file)) return;
 
     setIsUploading(true);
     setIsSuccess(false);
@@ -98,7 +100,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             if (e.dataTransfer.files?.length) handleUpload(e.dataTransfer.files[0]);
           }}
           className={`relative border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-all cursor-pointer bg-black/40
-            ${isDragging ? 'border-bullseye-blue bg-bullseye-blue/5' : 'border-white/10 hover:border-white/30'}
+            ${disabled ? 'opacity-50 cursor-not-allowed' : (isDragging ? 'border-bullseye-blue bg-bullseye-blue/5' : 'border-white/10 hover:border-white/30')}
             ${error ? 'border-red-500 bg-red-500/5' : ''}
           `}
         >
@@ -107,7 +109,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             onChange={onFileSelect}
             accept="image/png, image/jpeg, image/webp"
-            disabled={isUploading}
+            disabled={isUploading || disabled}
           />
           
           <div className="bg-white/5 p-3 rounded-full mb-3">
@@ -140,7 +142,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               <div className="flex justify-between items-center mb-1">
                 <span className={`text-[10px] font-bold uppercase tracking-widest flex items-center ${error ? 'text-red-500' : (isSuccess ? 'text-green-500' : 'text-gray-400')}`}>
                   {isSuccess && <CheckCircle2 size={10} className="mr-1" />}
-                  {error ? 'Transfer Error' : (isUploading ? 'Transmitting...' : (isSuccess ? 'Transfer Complete' : 'Ready'))}
+                  {error ? error : (isUploading ? 'Transmitting...' : (isSuccess ? 'Transfer Complete' : 'Ready'))}
                 </span>
                 <span className="text-[10px] font-mono text-white">{Math.round(uploadProgress)}%</span>
               </div>
@@ -155,7 +157,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
             <button 
               onClick={clearSelection}
-              className="p-1 hover:bg-white/10 rounded-full transition-colors text-gray-500 hover:text-white"
+              disabled={disabled}
+              className={`p-1 hover:bg-white/10 rounded-full transition-colors text-gray-500 hover:text-white ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <X size={16} />
             </button>
