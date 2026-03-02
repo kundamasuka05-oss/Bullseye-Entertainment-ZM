@@ -36,20 +36,33 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [siteContent, setSiteContent] = useState<SiteContent>(INITIAL_CONTENT);
   const [gallery, setGallery] = useState<GalleryItem[]>(INITIAL_GALLERY);
   const [loading, setLoading] = useState(true);
+  const [error, setContextError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
+      setContextError(null);
+      console.log("STORE: Fetching data...");
+      
+      // Add a timeout to the whole fetch process
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Fetch timeout")), 10000)
+      );
+
       const token = localStorage.getItem('admin_token');
       const headers: any = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const [pRes, authRes, cRes, gRes] = await Promise.all([
+      const fetchPromise = Promise.all([
         fetch('/api/games', { headers }),
         fetch('/api/auth/check', { headers }),
         fetch('/api/content'),
         fetch('/api/gallery')
       ]);
+
+      const [pRes, authRes, cRes, gRes] = await Promise.race([fetchPromise, timeoutPromise]) as [Response, Response, Response, Response];
+
+      console.log("STORE: Data received, processing...");
 
       if (pRes.ok) {
         const data = await pRes.json();
@@ -74,8 +87,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const { isAdmin } = await authRes.json();
         setIsAdmin(isAdmin);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch data:", err);
+      setContextError(err.message || "Unknown error during data fetch");
     } finally {
       setLoading(false);
     }
@@ -246,6 +260,12 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-bullseye-red border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-white font-display text-sm tracking-[0.3em] uppercase">Booting System...</p>
+            {error && (
+              <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs">
+                {error}
+                <button onClick={() => fetchData()} className="block mx-auto mt-2 underline">Retry</button>
+              </div>
+            )}
           </div>
         </div>
       ) : children}

@@ -28,12 +28,19 @@ export const uploadImage = async (
 
   if (!response.ok) {
     let errorMessage = 'Upload failed';
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.error || errorData.message || errorMessage;
-      if (errorData.details) console.error("UPLOAD: Server details:", errorData.details);
-    } catch (e) {
-      errorMessage = `Server Error: ${response.status}`;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch (e) {
+        errorMessage = `Server Error: ${response.status}`;
+      }
+    } else {
+      // If we got HTML (like a 404 or redirect), it's likely a session issue
+      if (response.status === 401) errorMessage = 'Session expired. Please log in again.';
+      else errorMessage = `Server Error: ${response.status} (Check login status)`;
     }
     throw new Error(errorMessage);
   }

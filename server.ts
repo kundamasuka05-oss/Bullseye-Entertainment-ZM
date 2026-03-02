@@ -12,14 +12,15 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const GAMES_FILE = path.join(__dirname, 'data', 'games.json');
-const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
-const GALLERY_FILE = path.join(__dirname, 'data', 'gallery.json');
+const DATA_DIR = path.join(__dirname, 'data');
+const GAMES_FILE = path.join(DATA_DIR, 'games.json');
+const CONTENT_FILE = path.join(DATA_DIR, 'content.json');
+const GALLERY_FILE = path.join(DATA_DIR, 'gallery.json');
 const IMAGES_DIR = path.join(__dirname, 'public', 'images');
 
 // Ensure directories exist
-if (!fs.existsSync(path.join(__dirname, 'data'))) {
-  fs.mkdirSync(path.join(__dirname, 'data'));
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR);
 }
 if (!fs.existsSync(IMAGES_DIR)) {
   fs.mkdirSync(IMAGES_DIR, { recursive: true });
@@ -68,8 +69,6 @@ async function startServer() {
     const rawCloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const cloudName = rawCloudName?.toLowerCase();
     console.log(`STORAGE: Cloudinary credentials found.`);
-    console.log(`STORAGE: Raw Cloud Name: "${rawCloudName}"`);
-    console.log(`STORAGE: Using Cloud Name: "${cloudName}"`);
     
     cloudinary.config({
       cloud_name: cloudName,
@@ -77,16 +76,13 @@ async function startServer() {
       api_secret: process.env.CLOUDINARY_API_SECRET
     });
     
-    const currentConfig = cloudinary.config();
-    console.log(`STORAGE: Cloudinary Configured Cloud Name: "${currentConfig.cloud_name}"`);
-
     const cloudinaryStorage = new CloudinaryStorage({
       cloudinary: cloudinary,
       params: async (req, file) => {
         const extension = path.extname(file.originalname).substring(1) || 'png';
         return {
           folder: 'bullseye_assets',
-          format: extension === 'jpg' ? 'jpeg' : extension, // Cloudinary uses 'jpeg'
+          format: extension === 'jpg' ? 'jpeg' : extension,
           public_id: `asset-${Date.now()}-${Math.round(Math.random() * 1E4)}`,
           transformation: [{ quality: 'auto' }]
         };
@@ -106,17 +102,13 @@ async function startServer() {
       
       const sessionIsAdmin = req.session && (req.session as any).isAdmin;
       
-      console.log(`AUTH: Checking access for ${req.path}. Token: ${token ? 'Present' : 'Missing'}. Session: ${ sessionIsAdmin ? 'Admin' : 'Guest'}`);
-      
       if (sessionIsAdmin || (token && token === 'bullseye-admin-token')) {
         next();
       } else {
-        console.warn(`AUTH: Unauthorized access attempt to ${req.path}`);
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized', message: 'Please log in to perform this action.' });
       }
     } catch (err: any) {
-      console.error("AUTH: Middleware error:", err);
-      res.status(500).json({ error: 'Authentication middleware error', details: err.message });
+      res.status(500).json({ error: 'Authentication error', details: err.message });
     }
   };
 
@@ -146,14 +138,14 @@ async function startServer() {
     res.json({ isAdmin: !!(req.session as any).isAdmin });
   });
 
-  // Games
+  // Data Helpers
   const getGames = () => {
     try {
       if (!fs.existsSync(GAMES_FILE)) return [];
       const data = fs.readFileSync(GAMES_FILE, 'utf-8');
       return JSON.parse(data);
     } catch (e) {
-      console.error("DATABASE: Corrupt JSON in games.json, returning empty array.");
+      console.error("DATABASE: Error reading games.json");
       return [];
     }
   };
@@ -164,12 +156,12 @@ async function startServer() {
 
   const getContent = () => {
     try {
-      if (!fs.existsSync(CONTENT_FILE)) return null;
+      if (!fs.existsSync(CONTENT_FILE)) return {};
       const data = fs.readFileSync(CONTENT_FILE, 'utf-8');
       return JSON.parse(data);
     } catch (e) {
       console.error("DATABASE: Error reading content.json");
-      return null;
+      return {};
     }
   };
 
@@ -179,12 +171,12 @@ async function startServer() {
 
   const getGallery = () => {
     try {
-      if (!fs.existsSync(GALLERY_FILE)) return null;
+      if (!fs.existsSync(GALLERY_FILE)) return [];
       const data = fs.readFileSync(GALLERY_FILE, 'utf-8');
       return JSON.parse(data);
     } catch (e) {
       console.error("DATABASE: Error reading gallery.json");
-      return null;
+      return [];
     }
   };
 
@@ -192,16 +184,17 @@ async function startServer() {
     fs.writeFileSync(GALLERY_FILE, JSON.stringify(gallery, null, 2));
   };
 
+  // Endpoints
   app.get('/api/games', (req, res) => {
     res.json(getGames());
   });
 
   app.get('/api/content', (req, res) => {
-    res.json(getContent() || {});
+    res.json(getContent());
   });
 
   app.get('/api/gallery', (req, res) => {
-    res.json(getGallery() || []);
+    res.json(getGallery());
   });
 
   app.post('/api/content', isAdmin, (req, res) => {
@@ -223,114 +216,90 @@ async function startServer() {
   });
 
   app.post('/api/games', isAdmin, (req, res) => {
-    console.log("API: POST /api/games - Body:", req.body);
     try {
       const games = getGames();
       const newGame = { ...req.body, id: Date.now().toString() };
       games.push(newGame);
       saveGames(games);
-      console.log("API: Game saved successfully:", newGame.id);
       res.json(newGame);
     } catch (err: any) {
-      console.error("API: Error saving game:", err);
-      res.status(500).json({ error: 'Failed to save game: ' + err.message });
+      res.status(500).json({ error: 'Failed to save game' });
     }
   });
 
   app.put('/api/games/:id', isAdmin, (req, res) => {
-    console.log(`API: PUT /api/games/${req.params.id} - Body:`, req.body);
     try {
       let games = getGames();
       const index = games.findIndex((g: any) => g.id === req.params.id);
       if (index !== -1) {
         games[index] = { ...games[index], ...req.body };
         saveGames(games);
-        console.log("API: Game updated successfully:", req.params.id);
         res.json(games[index]);
       } else {
-        console.warn("API: Game not found for update:", req.params.id);
         res.status(404).json({ error: 'Game not found' });
       }
     } catch (err: any) {
-      console.error("API: Error updating game:", err);
-      res.status(500).json({ error: 'Failed to update game: ' + err.message });
+      res.status(500).json({ error: 'Failed to update game' });
     }
   });
 
   app.delete('/api/games/:id', isAdmin, (req, res) => {
-    console.log(`API: DELETE /api/games/${req.params.id}`);
     try {
       let games = getGames();
       const gameToDelete = games.find((g: any) => g.id === req.params.id);
-      
       if (gameToDelete && gameToDelete.locked) {
         return res.status(403).json({ error: 'This asset is locked and cannot be deleted.' });
       }
-
-      const filtered = games.filter((g: any) => g.id !== req.params.id);
-      saveGames(filtered);
+      games = games.filter((g: any) => g.id !== req.params.id);
+      saveGames(games);
       res.json({ success: true });
     } catch (err: any) {
-      console.error("API: Error deleting game:", err);
-      res.status(500).json({ error: 'Failed to delete game: ' + err.message });
+      res.status(500).json({ error: 'Failed to delete game' });
     }
   });
 
   // Image Upload
   app.post('/api/upload', isAdmin, (req, res) => {
-    console.log("UPLOAD: Received upload request");
     try {
       if (!cloudinaryUpload) {
-        console.error("UPLOAD: cloudinaryUpload middleware is not initialized");
         return res.status(500).json({ error: 'Upload system not initialized' });
       }
 
       cloudinaryUpload.single('image')(req, res, (err) => {
         if (err) {
-          console.error("UPLOAD: Multer/Cloudinary Error:", err);
           return res.status(500).json({ 
-            error: 'Upload failed: ' + (err.message || 'Internal Server Error'),
-            details: err.toString()
+            error: 'Upload failed: ' + (err.message || 'Internal Server Error')
           });
         }
         
         if (!req.file) {
-          console.warn("UPLOAD: No file in request");
           return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        try {
-          // Cloudinary returns 'path' or 'secure_url'
-          const url = (req.file as any).path || (req.file as any).secure_url || (req.file as any).url;
-          
-          if (!url) {
-            console.error("UPLOAD: File uploaded but no URL returned", req.file);
-            return res.status(500).json({ error: 'Upload succeeded but URL is missing' });
-          }
-
-          console.log("UPLOAD: Success. URL:", url);
-          res.json({ url });
-        } catch (processingErr: any) {
-          console.error("UPLOAD: Post-processing error:", processingErr);
-          res.status(500).json({ error: 'Error processing upload result', details: processingErr.message });
+        const url = (req.file as any).path || (req.file as any).secure_url || (req.file as any).url;
+        if (!url) {
+          return res.status(500).json({ error: 'Upload succeeded but URL is missing' });
         }
+
+        res.json({ url });
       });
     } catch (routeErr: any) {
-      console.error("UPLOAD: Route handler error:", routeErr);
-      res.status(500).json({ error: 'Upload route error', details: routeErr.message });
+      res.status(500).json({ error: 'Upload route error' });
     }
   });
 
   // Serve uploaded images
   app.use('/images', express.static(IMAGES_DIR));
 
-  // Global Error Handler - Ensure JSON responses for all errors
+  // Global Error Handler
   app.use((err: any, req: any, res: any, next: any) => {
     console.error("SERVER ERROR:", err);
-    res.status(500).json({ 
+    if (res.headersSent) {
+      return next(err);
+    }
+    res.status(err.status || 500).json({ 
       error: 'Internal Server Error', 
-      message: err.message,
-      details: err.toString()
+      message: err.message || 'An unexpected error occurred'
     });
   });
 
