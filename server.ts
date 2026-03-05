@@ -18,7 +18,6 @@ const CONTENT_FILE = path.join(DATA_DIR, 'content.json');
 const GALLERY_FILE = path.join(DATA_DIR, 'gallery.json');
 const IMAGES_DIR = path.join(__dirname, 'public', 'images');
 
-// Ensure directories exist
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR);
 }
@@ -28,9 +27,9 @@ if (!fs.existsSync(IMAGES_DIR)) {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
-  app.set('trust proxy', 1); // trust first proxy
+  app.set('trust proxy', 1);
   app.use(express.json());
   app.use(cookieParser());
   app.use(session({
@@ -41,11 +40,10 @@ async function startServer() {
     cookie: { 
       secure: true,
       sameSite: 'none',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000
     }
   }));
 
-  // Multer setup for image uploads
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, IMAGES_DIR);
@@ -57,13 +55,12 @@ async function startServer() {
   });
   const upload = multer({ 
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 }
   });
 
-  // Cloudinary Configuration
   const useCloudinary = process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET;
   
-  let cloudinaryUpload = upload; // Fallback to local multer
+  let cloudinaryUpload = upload;
 
   if (useCloudinary) {
     const rawCloudName = process.env.CLOUDINARY_CLOUD_NAME;
@@ -94,14 +91,11 @@ async function startServer() {
     console.warn("STORAGE: Cloudinary credentials missing. Falling back to local storage (temporary).");
   }
 
-  // Auth Middleware
   const isAdmin = (req: any, res: any, next: any) => {
     try {
       const authHeader = req.headers.authorization;
       const token = authHeader && authHeader.split(' ')[1];
-      
       const sessionIsAdmin = req.session && (req.session as any).isAdmin;
-      
       if (sessionIsAdmin || (token && token === 'bullseye-admin-token')) {
         next();
       } else {
@@ -112,9 +106,6 @@ async function startServer() {
     }
   };
 
-  // --- API Routes ---
-
-  // Auth
   app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     const expectedUser = process.env.ADMIN_USERNAME || 'admin';
@@ -138,7 +129,6 @@ async function startServer() {
     res.json({ isAdmin: !!(req.session as any).isAdmin });
   });
 
-  // Data Helpers
   const getGames = () => {
     try {
       if (!fs.existsSync(GAMES_FILE)) return [];
@@ -184,7 +174,6 @@ async function startServer() {
     fs.writeFileSync(GALLERY_FILE, JSON.stringify(gallery, null, 2));
   };
 
-  // Endpoints
   app.get('/api/games', (req, res) => {
     res.json(getGames());
   });
@@ -258,7 +247,6 @@ async function startServer() {
     }
   });
 
-  // Image Upload
   app.post('/api/upload', isAdmin, (req, res) => {
     try {
       if (!cloudinaryUpload) {
@@ -288,10 +276,8 @@ async function startServer() {
     }
   });
 
-  // Serve uploaded images
   app.use('/images', express.static(IMAGES_DIR));
 
-  // Global Error Handler
   app.use((err: any, req: any, res: any, next: any) => {
     console.error("SERVER ERROR:", err);
     if (res.headersSent) {
@@ -303,7 +289,6 @@ async function startServer() {
     });
   });
 
-  // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -312,7 +297,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (req, res) => {
+    app.get('*path', (req, res) => {
       res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
   }
