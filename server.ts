@@ -8,6 +8,7 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
+import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -273,6 +274,21 @@ async function startServer() {
       });
     } catch (routeErr: any) {
       res.status(500).json({ error: 'Upload route error' });
+    }
+  });
+
+  app.post('/api/generate-description', isAdmin, async (req, res) => {
+    try {
+      const { productName, category } = req.body;
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `Write a fun, exciting, and short sales description (max 2 sentences) for a party rental item named "${productName}" in the category "${category}". The tone should be energetic and suitable for an event company called Bullseye Entertainment ZM.`;
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: prompt,
+      });
+      res.json({ description: response.text.trim() });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to generate description' });
     }
   });
 

@@ -1,19 +1,14 @@
 
-import { GoogleGenAI } from "@google/genai";
-
-// Always use process.env.API_KEY directly when initializing the client.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const generateProductDescription = async (productName: string, category: string): Promise<string> => {
   try {
-    const prompt = `Write a fun, exciting, and short sales description (max 2 sentences) for a party rental item named "${productName}" in the category "${category}". The tone should be energetic and suitable for an event company called Bullseye Entertainment ZM.`;
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
+    const response = await fetch('/api/generate-description', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productName, category })
     });
 
-    return response.text.trim();
+    const data = await response.json();
+    return data.description || "Could not generate description at this time.";
   } catch (error) {
     console.error("Gemini generation error:", error);
     return "Could not generate description at this time.";
