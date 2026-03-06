@@ -9,24 +9,28 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
+import { MongoClient } from 'mongodb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATA_DIR = path.join(__dirname, 'data');
-const GAMES_FILE = path.join(DATA_DIR, 'games.json');
-const CONTENT_FILE = path.join(DATA_DIR, 'content.json');
-const GALLERY_FILE = path.join(DATA_DIR, 'gallery.json');
 const IMAGES_DIR = path.join(__dirname, 'public', 'images');
-
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR);
-}
 if (!fs.existsSync(IMAGES_DIR)) {
   fs.mkdirSync(IMAGES_DIR, { recursive: true });
 }
 
+const mongoClient = new MongoClient(process.env.MONGODB_URI || '');
+let db: any;
+
+async function connectDB() {
+  await mongoClient.connect();
+  db = mongoClient.db('bullseye');
+  console.log('DATABASE: MongoDB connected.');
+}
+
 async function startServer() {
+  await connectDB();
+
   const app = express();
   const PORT = process.env.PORT || 3000;
 
@@ -38,7 +42,7 @@ async function startServer() {
     resave: false,
     saveUninitialized: false,
     proxy: true,
-    cookie: { 
+    cookie: {
       secure: true,
       sameSite: 'none',
       maxAge: 24 * 60 * 60 * 1000
@@ -54,26 +58,22 @@ async function startServer() {
       cb(null, uniqueSuffix + path.extname(file.originalname));
     }
   });
-  const upload = multer({ 
+  const upload = multer({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 }
   });
 
   const useCloudinary = process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET;
-  
   let cloudinaryUpload = upload;
 
   if (useCloudinary) {
-    const rawCloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const cloudName = rawCloudName?.toLowerCase();
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.toLowerCase();
     console.log(`STORAGE: Cloudinary credentials found.`);
-    
     cloudinary.config({
       cloud_name: cloudName,
       api_key: process.env.CLOUDINARY_API_KEY,
       api_secret: process.env.CLOUDINARY_API_SECRET
     });
-    
     const cloudinaryStorage = new CloudinaryStorage({
       cloudinary: cloudinary,
       params: async (req, file) => {
@@ -86,10 +86,9 @@ async function startServer() {
         };
       },
     });
-
     cloudinaryUpload = multer({ storage: cloudinaryStorage });
   } else {
-    console.warn("STORAGE: Cloudinary credentials missing. Falling back to local storage (temporary).");
+    console.warn("STORAGE: Cloudinary credentials missing. Falling back to local storage.");
   }
 
   const isAdmin = (req: any, res: any, next: any) => {
@@ -111,7 +110,6 @@ async function startServer() {
     const { username, password } = req.body;
     const expectedUser = process.env.ADMIN_USERNAME || 'admin';
     const expectedPass = process.env.ADMIN_PASSWORD || 'bullseye_admin_2024';
-
     if (username === expectedUser && password === expectedPass) {
       (req.session as any).isAdmin = true;
       res.json({ success: true, token: 'bullseye-admin-token' });
@@ -130,120 +128,85 @@ async function startServer() {
     res.json({ isAdmin: !!(req.session as any).isAdmin });
   });
 
-  const getGames = () => {
+  app.get('/api/games', async (req, res) => {
     try {
-      if (!fs.existsSync(GAMES_FILE)) return [];
-      const data = fs.readFileSync(GAMES_FILE, 'utf-8');
-      return JSON.parse(data);
+      const games = await db.collection('games').find().toArray();
+      res.json(games);
     } catch (e) {
-      console.error("DATABASE: Error reading games.json");
-      return [];
+      res.status(500).json({ error: 'Failed to get games' });
     }
-  };
-
-  const saveGames = (games: any[]) => {
-    fs.writeFileSync(GAMES_FILE, JSON.stringify(games, null, 2));
-  };
-
-  const getContent = () => {
-    try {
-      if (!fs.existsSync(CONTENT_FILE)) return {};
-      const data = fs.readFileSync(CONTENT_FILE, 'utf-8');
-      return JSON.parse(data);
-    } catch (e) {
-      console.error("DATABASE: Error reading content.json");
-      return {};
-    }
-  };
-
-  const saveContent = (content: any) => {
-    fs.writeFileSync(CONTENT_FILE, JSON.stringify(content, null, 2));
-  };
-
-  const getGallery = () => {
-    try {
-      if (!fs.existsSync(GALLERY_FILE)) return [];
-      const data = fs.readFileSync(GALLERY_FILE, 'utf-8');
-      return JSON.parse(data);
-    } catch (e) {
-      console.error("DATABASE: Error reading gallery.json");
-      return [];
-    }
-  };
-
-  const saveGallery = (gallery: any[]) => {
-    fs.writeFileSync(GALLERY_FILE, JSON.stringify(gallery, null, 2));
-  };
-
-  app.get('/api/games', (req, res) => {
-    res.json(getGames());
   });
 
-  app.get('/api/content', (req, res) => {
-    res.json(getContent());
-  });
-
-  app.get('/api/gallery', (req, res) => {
-    res.json(getGallery());
-  });
-
-  app.post('/api/content', isAdmin, (req, res) => {
+  app.get('/api/content', async (req, res) => {
     try {
-      saveContent(req.body);
+      const content = await db.collection('content').findOne({ _id: 'main' as any });
+      res.json(content || {});
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to get content' });
+    }
+  });
+
+  app.get('/api/gallery', async (req, res) => {
+    try {
+      const gallery = await db.collection('gallery').find().toArray();
+      res.json(gallery);
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to get gallery' });
+    }
+  });
+
+  app.post('/api/content', isAdmin, async (req, res) => {
+    try {
+      await db.collection('content').replaceOne({ _id: 'main' as any }, { _id: 'main', ...req.body }, { upsert: true });
       res.json({ success: true });
-    } catch (err: any) {
+    } catch (e) {
       res.status(500).json({ error: 'Failed to save content' });
     }
   });
 
-  app.post('/api/gallery', isAdmin, (req, res) => {
+  app.post('/api/gallery', isAdmin, async (req, res) => {
     try {
-      saveGallery(req.body);
+      await db.collection('gallery').deleteMany({});
+      if (req.body.length > 0) await db.collection('gallery').insertMany(req.body);
       res.json({ success: true });
-    } catch (err: any) {
+    } catch (e) {
       res.status(500).json({ error: 'Failed to save gallery' });
     }
   });
 
-  app.post('/api/games', isAdmin, (req, res) => {
+  app.post('/api/games', isAdmin, async (req, res) => {
     try {
-      const games = getGames();
       const newGame = { ...req.body, id: Date.now().toString() };
-      games.push(newGame);
-      saveGames(games);
+      await db.collection('games').insertOne(newGame);
       res.json(newGame);
-    } catch (err: any) {
+    } catch (e) {
       res.status(500).json({ error: 'Failed to save game' });
     }
   });
 
-  app.put('/api/games/:id', isAdmin, (req, res) => {
+  app.put('/api/games/:id', isAdmin, async (req, res) => {
     try {
-      let games = getGames();
-      const index = games.findIndex((g: any) => g.id === req.params.id);
-      if (index !== -1) {
-        games[index] = { ...games[index], ...req.body };
-        saveGames(games);
-        res.json(games[index]);
+      await db.collection('games').updateOne({ id: req.params.id }, { $set: req.body });
+      const updated = await db.collection('games').findOne({ id: req.params.id });
+      if (updated) {
+        res.json(updated);
       } else {
         res.status(404).json({ error: 'Game not found' });
       }
-    } catch (err: any) {
+    } catch (e) {
       res.status(500).json({ error: 'Failed to update game' });
     }
   });
 
-  app.delete('/api/games/:id', isAdmin, (req, res) => {
+  app.delete('/api/games/:id', isAdmin, async (req, res) => {
     try {
-      let games = getGames();
-      const gameToDelete = games.find((g: any) => g.id === req.params.id);
-      if (gameToDelete && gameToDelete.locked) {
+      const game = await db.collection('games').findOne({ id: req.params.id });
+      if (game && game.locked) {
         return res.status(403).json({ error: 'This asset is locked and cannot be deleted.' });
       }
-      games = games.filter((g: any) => g.id !== req.params.id);
-      saveGames(games);
+      await db.collection('games').deleteOne({ id: req.params.id });
       res.json({ success: true });
-    } catch (err: any) {
+    } catch (e) {
       res.status(500).json({ error: 'Failed to delete game' });
     }
   });
@@ -253,23 +216,17 @@ async function startServer() {
       if (!cloudinaryUpload) {
         return res.status(500).json({ error: 'Upload system not initialized' });
       }
-
       cloudinaryUpload.single('image')(req, res, (err) => {
         if (err) {
-          return res.status(500).json({ 
-            error: 'Upload failed: ' + (err.message || 'Internal Server Error')
-          });
+          return res.status(500).json({ error: 'Upload failed: ' + (err.message || 'Internal Server Error') });
         }
-        
         if (!req.file) {
           return res.status(400).json({ error: 'No file uploaded' });
         }
-
         const url = (req.file as any).path || (req.file as any).secure_url || (req.file as any).url;
         if (!url) {
           return res.status(500).json({ error: 'Upload succeeded but URL is missing' });
         }
-
         res.json({ url });
       });
     } catch (routeErr: any) {
@@ -296,11 +253,9 @@ async function startServer() {
 
   app.use((err: any, req: any, res: any, next: any) => {
     console.error("SERVER ERROR:", err);
-    if (res.headersSent) {
-      return next(err);
-    }
-    res.status(err.status || 500).json({ 
-      error: 'Internal Server Error', 
+    if (res.headersSent) return next(err);
+    res.status(err.status || 500).json({
+      error: 'Internal Server Error',
       message: err.message || 'An unexpected error occurred'
     });
   });
