@@ -186,15 +186,20 @@ async function startServer() {
 
   app.put('/api/games/:id', isAdmin, async (req, res) => {
     try {
-      await db.collection('games').updateOne({ id: req.params.id }, { $set: req.body });
-      const updated = await db.collection('games').findOne({ id: req.params.id });
-      if (updated) {
-        res.json(updated);
-      } else {
-        res.status(404).json({ error: 'Game not found' });
+      const { _id, id, ...updateData } = req.body;
+      const result = await db.collection('games').updateOne(
+        { id: req.params.id },
+        { $set: updateData }
+      );
+      console.log('UPDATE RESULT:', result);
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ error: 'Game not found', id: req.params.id });
       }
-    } catch (e) {
-      res.status(500).json({ error: 'Failed to update game' });
+      const updated = await db.collection('games').findOne({ id: req.params.id });
+      res.json(updated);
+    } catch (e: any) {
+      console.error('UPDATE ERROR:', e);
+      res.status(500).json({ error: 'Failed to update game', details: e.message });
     }
   });
 
