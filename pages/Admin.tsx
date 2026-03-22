@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product } from '../types';
-import { Trash2, Edit, Plus, Check, X, LogOut, ShieldAlert, Wand2, Terminal, Loader2, Lock, Unlock } from 'lucide-react';
+import { Trash2, Edit, Plus, Check, X, LogOut, ShieldAlert, Wand2, Terminal, Loader2, Lock, Unlock, FileText } from 'lucide-react';
 import { generateProductDescription } from '../services/geminiService';
 import ImageUpload from '../components/ImageUpload';
+import { Link } from 'react-router-dom';
 
 const Admin: React.FC = () => {
   const { 
@@ -94,9 +95,14 @@ const Admin: React.FC = () => {
               Local System Active
             </div>
           </div>
-          <button onClick={logout} className="text-red-500 hover:text-white font-bold uppercase tracking-wider text-xs flex items-center transition-all bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20">
-            <LogOut size={16} className="mr-2"/> End Session
-          </button>
+          <div className="flex items-center space-x-4">
+            <Link to="/admin/content" className="text-bullseye-blue hover:text-white font-bold uppercase tracking-wider text-xs flex items-center transition-all bg-bullseye-blue/10 px-4 py-2 rounded-lg border border-bullseye-blue/20">
+              <FileText size={16} className="mr-2"/> Content Editor
+            </Link>
+            <button onClick={logout} className="text-red-500 hover:text-white font-bold uppercase tracking-wider text-xs flex items-center transition-all bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20">
+              <LogOut size={16} className="mr-2"/> End Session
+            </button>
+          </div>
         </div>
       </header>
 

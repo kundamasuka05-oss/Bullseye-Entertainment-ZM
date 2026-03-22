@@ -25,6 +25,7 @@ interface StoreContextType {
   toggleProductLock: (id: string) => Promise<void>;
   
   updateContent: (key: string, value: string) => void;
+  saveSiteContent: (content: SiteContent) => Promise<void>;
   updateGallery: (items: GalleryItem[]) => Promise<void>;
 }
 
@@ -208,23 +209,28 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const updateContent = async (key: string, value: string) => {
+  const updateContent = (key: string, value: string) => {
     const newContent = { ...siteContent, [key]: value };
     setSiteContent(newContent);
+  };
 
+  const saveSiteContent = async (newContent: SiteContent) => {
+    setSiteContent(newContent);
     if (isAdmin) {
       try {
         const token = localStorage.getItem('admin_token');
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        await fetch('/api/content', {
-          method: 'POST',
+        const res = await fetch('/api/content', {
+          method: 'PUT',
           headers,
           body: JSON.stringify(newContent)
         });
+        if (!res.ok) throw new Error("Failed to save content");
       } catch (e) {
         console.error("Failed to save content to server:", e);
+        throw e;
       }
     }
   };
@@ -253,7 +259,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       products, isAdmin, siteContent, gallery, loading,
       login, logout,
       addProduct, updateProduct, deleteProduct, toggleProductAvailability, toggleProductLock,
-      updateContent, updateGallery
+      updateContent, saveSiteContent, updateGallery
     }}>
       {loading ? (
         <div className="min-h-screen bg-bullseye-base flex items-center justify-center">

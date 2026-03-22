@@ -8,6 +8,7 @@ import About from './pages/About';
 import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
+import AdminContent from './pages/AdminContent';
 
 const App: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ const App: React.FC = () => {
             <Route path="/contact" element={<Contact />} />
             <Route path="/admin-login" element={<Admin />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/content" element={<AdminContent />} />
           </Routes>
         </Layout>
       </Router>

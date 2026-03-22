@@ -8,7 +8,7 @@ import GalleryShowcase from '../components/GalleryShowcase';
 import { INITIAL_CONTENT } from '../constants';
 
 const Home: React.FC = () => {
-  const { products } = useStore();
+  const { products, siteContent } = useStore();
   const featuredProducts = products.slice(0, 4); 
 
   return (
@@ -52,7 +52,7 @@ const Home: React.FC = () => {
             {/* Right Column: Text & CTA */}
             <div className="w-full lg:w-1/2 text-center lg:text-left">
               <div className="inline-block mb-4 px-3 py-1 rounded bg-bullseye-blue/10 border border-bullseye-blue/30 text-bullseye-blue text-xs font-bold tracking-[0.2em] uppercase">
-                Premium Event Rentals
+                {siteContent.tagline || 'Premium Event Rentals'}
               </div>
               
               <EditableText 
@@ -70,7 +70,7 @@ const Home: React.FC = () => {
               />
               
               <EditableText 
-                contentKey="heroDescription" 
+                contentKey="aboutText" 
                 defaultText={INITIAL_CONTENT.heroDescription} 
                 tag="p" 
                 className="text-gray-400 text-lg mb-10 leading-relaxed max-w-lg mx-auto lg:mx-0 font-light"

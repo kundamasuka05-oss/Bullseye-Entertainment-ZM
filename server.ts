@@ -140,9 +140,46 @@ async function startServer() {
   app.get('/api/content', async (req, res) => {
     try {
       const content = await db.collection('content').findOne({ _id: 'main' as any });
-      res.json(content || {});
+      const defaultContent = {
+        heroTitle: "Bullseye Entertainment ZM",
+        heroSubtitle: "Get the party started!",
+        tagline: "Premium Event Rentals",
+        aboutText: "Zambia's premier choice for event rentals, giant games, inflatables, and corporate team building.",
+        logoUrl: ""
+      };
+      res.json({ ...defaultContent, ...(content || {}) });
     } catch (e) {
       res.status(500).json({ error: 'Failed to get content' });
+    }
+  });
+
+  app.put('/api/content', isAdmin, async (req, res) => {
+    try {
+      const { _id, ...updateData } = req.body;
+      await db.collection('content').replaceOne({ _id: 'main' as any }, { _id: 'main', ...updateData }, { upsert: true });
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to update content' });
+    }
+  });
+
+  app.post('/api/upload-logo', isAdmin, (req, res) => {
+    try {
+      if (!cloudinaryUpload) {
+        return res.status(500).json({ error: 'Upload system not initialized' });
+      }
+      cloudinaryUpload.single('logo')(req, res, (err) => {
+        if (err) {
+          return res.status(500).json({ error: 'Upload failed: ' + (err.message || 'Internal Server Error') });
+        }
+        if (!req.file) {
+          return res.status(400).json({ error: 'No file uploaded' });
+        }
+        const url = (req.file as any).path || (req.file as any).secure_url || (req.file as any).url;
+        res.json({ url });
+      });
+    } catch (routeErr: any) {
+      res.status(500).json({ error: 'Upload route error' });
     }
   });
 

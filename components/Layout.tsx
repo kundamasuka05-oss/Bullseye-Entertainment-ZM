@@ -3,12 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Phone, MessageCircle } from 'lucide-react';
 import { COMPANY_INFO } from '../constants';
 import AdminToolbar from './AdminToolbar';
+import { useStore } from '../context/StoreContext';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { siteContent } = useStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -54,17 +56,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             
             {/* Logo */}
             <Link to="/" className="flex items-center group">
-               {/* Replace with actual image in production */}
-               <img src="/logo.png" alt="Bullseye Logo" className="h-20 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
-                    onError={(e) => {
-                      e.currentTarget.onerror = null; 
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }} 
-               />
-               <span className="hidden ml-2 font-display font-black text-2xl tracking-widest text-white group-hover:text-bullseye-red transition-colors duration-300">
-                 BULL<span className="text-bullseye-red group-hover:text-white">SEYE</span>
-               </span>
+               {siteContent.logoUrl ? (
+                 <img src={siteContent.logoUrl} alt="Bullseye Logo" className="h-20 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
+               ) : (
+                 <>
+                   <img src="/logo.png" alt="Bullseye Logo" className="h-20 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
+                        onError={(e) => {
+                          e.currentTarget.onerror = null; 
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }} 
+                   />
+                   <span className="hidden ml-2 font-display font-black text-2xl tracking-widest text-white group-hover:text-bullseye-red transition-colors duration-300">
+                     BULL<span className="text-bullseye-red group-hover:text-white">SEYE</span>
+                   </span>
+                 </>
+               )}
             </Link>
 
             {/* Desktop Menu */}
@@ -142,7 +149,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               BULLSEYE<span className="text-bullseye-red">ZM</span>
             </h3>
             <p className="text-gray-400 text-sm max-w-sm">
-              {COMPANY_INFO.tagline} <br/>
+              {siteContent.tagline || COMPANY_INFO.tagline} <br/>
               Leveling up entertainment in Zambia with premium rentals, giant games, and immersive experiences.
             </p>
           </div>
